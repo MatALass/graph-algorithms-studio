@@ -2,6 +2,37 @@ import java.io.*;
 import java.util.*;
 
 public class OrdonnancementProjet {
+    public static void main() {
+        String nomFichier = "src/contraintes.txt";
+        List<int[]> contraintes = lireFichierContraintes(nomFichier);
+
+        if (contraintes.isEmpty()) {
+            System.out.println("Le fichier est vide ou une erreur s'est produite.");
+            return;
+        }
+
+        afficherContraintes(contraintes);
+        int[][] matrice = creerMatriceAdjacence(contraintes);
+        afficherMatrice(matrice);
+
+        if (!verifierGraphe(matrice)) {
+            System.out.println("\nLe graphe contient un circuit ou des valeurs négatives.");
+            return;
+        }
+
+        System.out.println("\nLe graphe est valide pour l'ordonnancement.");
+
+        int[] rangs = calculerRangs(matrice);
+        afficherRangs(rangs);
+
+        int[] auPlusTot = calculerCalendrierAuPlusTot(matrice);
+        int[] auPlusTard = calculerCalendrierAuPlusTard(matrice, auPlusTot);
+        int[] marges = calculerMarges(auPlusTot, auPlusTard);
+
+        afficherCalendriers(auPlusTot, auPlusTard, marges);
+        afficherCheminCritique(marges);
+    }
+
     // Lecture du fichier
     public static List<int[]> lireFichierContraintes(String nomFichier) {
         List<int[]> contraintes = new ArrayList<>();
@@ -81,8 +112,17 @@ public class OrdonnancementProjet {
         }
     }
 
-    // Vérification du graphe
+
+    // Vérification de la présence d'arcs à valeurs négatives
     public static boolean verifierGraphe(int[][] matrice) {
+        for (int[] ints : matrice) {
+            for (int anInt : ints) {
+                if (anInt < -1) {
+                    System.out.println("Valeur négative détectée dans le graphe.");
+                    return false;
+                }
+            }
+        }
         return !contientCircuit(matrice);
     }
 
@@ -90,6 +130,7 @@ public class OrdonnancementProjet {
         int N = matrice.length;
         int[] degresEntrants = new int[N];
 
+        // Compter les degrés entrants
         for (int[] ints : matrice) {
             for (int j = 0; j < N; j++) {
                 if (ints[j] > -1) {
@@ -120,7 +161,11 @@ public class OrdonnancementProjet {
             }
         }
 
-        return compte != N;
+        if (compte != N) {
+            System.out.println("Circuit détecté dans le graphe.");
+            return true;
+        }
+        return false;
     }
 
     // Calcul des rangs
@@ -146,6 +191,7 @@ public class OrdonnancementProjet {
             System.out.printf("Sommet %d : Rang %d\n", i, rangs[i]);
         }
     }
+
 
     // Calcul du calendrier au plus tôt
     public static int[] calculerCalendrierAuPlusTot(int[][] matrice) {

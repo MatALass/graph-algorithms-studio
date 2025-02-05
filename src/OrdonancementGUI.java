@@ -6,7 +6,6 @@ import java.io.*;
 import java.util.List;
 
 
-
 public class OrdonancementGUI {
     private JFrame frame;
     private JTextArea contraintesArea;
