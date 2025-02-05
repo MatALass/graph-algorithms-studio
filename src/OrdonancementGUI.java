@@ -1,7 +1,5 @@
 import javax.swing.*;
-import javax.swing.border.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.io.*;
 import java.util.List;
 
@@ -93,8 +91,8 @@ public class OrdonancementGUI {
         JButton btnChoisirFichier = new JButton("Choisir fichier");
         JButton btnCalculer = new JButton("Calculer");
 
-        btnChoisirFichier.addActionListener(e -> choisirFichier());
-        btnCalculer.addActionListener(e -> calculerEtAfficher());
+        btnChoisirFichier.addActionListener(_ -> choisirFichier());
+        btnCalculer.addActionListener(_ -> calculerEtAfficher());
 
         toolBar.add(btnChoisirFichier);
         toolBar.addSeparator();
@@ -145,7 +143,7 @@ public class OrdonancementGUI {
             // Matrice affichage
             afficherMatriceDansGrille(matrice);
 
-            if (!OrdonnancementProjet.verifierGraphe(matrice)) {
+            if (OrdonnancementProjet.verifierGraphe(matrice)) {
                 JOptionPane.showMessageDialog(frame, "Le graphe contient un circuit ou des valeurs négatives", "Erreur", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -209,10 +207,8 @@ public class OrdonancementGUI {
         frame.setVisible(true);
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new OrdonancementGUI().show();
-        });
+    public static void main() {
+        SwingUtilities.invokeLater(() -> new OrdonancementGUI().show());
     }
 
 }

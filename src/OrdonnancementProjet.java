@@ -15,7 +15,7 @@ public class OrdonnancementProjet {
         int[][] matrice = creerMatriceAdjacence(contraintes);
         afficherMatrice(matrice);
 
-        if (!verifierGraphe(matrice)) {
+        if (verifierGraphe(matrice)) {
             System.out.println("\nLe graphe contient un circuit ou des valeurs négatives.");
             return;
         }
@@ -119,11 +119,11 @@ public class OrdonnancementProjet {
             for (int anInt : ints) {
                 if (anInt < -1) {
                     System.out.println("Valeur négative détectée dans le graphe.");
-                    return false;
+                    return true;
                 }
             }
         }
-        return !contientCircuit(matrice);
+        return contientCircuit(matrice);
     }
 
     public static boolean contientCircuit(int[][] matrice) {
