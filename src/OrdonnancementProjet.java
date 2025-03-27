@@ -3,7 +3,7 @@ import java.util.*;
 
 public class OrdonnancementProjet {
     public static void main() {
-        String nomFichier = "src/contraintes.txt";
+        String nomFichier = "src/table 3.txt";
         List<int[]> contraintes = lireFichierContraintes(nomFichier);
 
         if (contraintes.isEmpty()) {
@@ -11,7 +11,7 @@ public class OrdonnancementProjet {
             return;
         }
 
-        afficherContraintes(contraintes);
+        //afficherContraintes(contraintes);
         int[][] matrice = creerMatriceAdjacence(contraintes);
         afficherMatrice(matrice);
 
@@ -62,19 +62,21 @@ public class OrdonnancementProjet {
         int N = contraintes.size();
         int[][] matrice = new int[N + 2][N + 2];
 
+        // Initialisation de la matrice avec -1 (aucun lien)
         for (int[] ligne : matrice) {
             Arrays.fill(ligne, -1);
         }
 
+        // Remplissage des arcs entre les tâches
         for (int[] ligne : contraintes) {
             int tache = ligne[0];
-            int duree = ligne[1];
 
             if (ligne.length == 2) {
                 matrice[0][tache] = 0;
             } else {
                 for (int i = 2; i < ligne.length; i++) {
-                    matrice[ligne[i]][tache] = duree;
+                    int predecesseur = ligne[i];
+                    matrice[predecesseur][tache] = contraintes.get(predecesseur - 1)[1];
                 }
             }
         }
@@ -90,12 +92,13 @@ public class OrdonnancementProjet {
                 }
             }
             if (estDerniereTache) {
-                matrice[i][N + 1] = 0;
+                matrice[i][N + 1] = contraintes.get(i - 1)[1];
             }
         }
 
         return matrice;
     }
+
 
     // Affichage de la matrice d'adjacence
     public static void afficherMatrice(int[][] matrice) {
