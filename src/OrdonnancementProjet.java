@@ -171,15 +171,40 @@ public class OrdonnancementProjet {
         return false;
     }
 
-    // Calcul des rangs
     public static int[] calculerRangs(int[][] matrice) {
         int N = matrice.length;
-        int[] rangs = new int[N];
+        int[] rangs = new int[N]; // Tableau des rangs
+        int[] degreEntrant = new int[N]; // Stocke le nombre de prédecesseurs pour chaque sommet
+        Queue<Integer> file = new LinkedList<>(); // File pour le tri topologique
 
-        for (int i = 0; i < N; i++) {
+        // Calcul du degré entrant de chaque sommet
+        for (int[] ints : matrice) {
             for (int j = 0; j < N; j++) {
-                if (matrice[i][j] > -1) {
-                    rangs[j] = Math.max(rangs[j], rangs[i] + 1);
+                if (ints[j] > -1) { // Il existe un arc de i vers j
+                    degreEntrant[j]++;
+                }
+            }
+        }
+
+        // Ajouter à la file les sommets sans prédécesseurs (degré entrant == 0)
+        for (int i = 0; i < N; i++) {
+            if (degreEntrant[i] == 0) {
+                file.add(i);
+            }
+        }
+
+        // Traitement des sommets dans l'ordre topologique
+        while (!file.isEmpty()) {
+            int sommet = file.poll();
+
+            for (int successeur = 0; successeur < N; successeur++) {
+                if (matrice[sommet][successeur] > -1) { // Il y a un arc sommet -> successeur
+                    rangs[successeur] = Math.max(rangs[successeur], rangs[sommet] + 1);
+                    degreEntrant[successeur]--;
+
+                    if (degreEntrant[successeur] == 0) {
+                        file.add(successeur);
+                    }
                 }
             }
         }
@@ -187,7 +212,6 @@ public class OrdonnancementProjet {
         return rangs;
     }
 
-    // Affichage des rangs des sommets
     public static void afficherRangs(int[] rangs) {
         System.out.println("\nRangs des sommets :");
         for (int i = 0; i < rangs.length; i++) {
