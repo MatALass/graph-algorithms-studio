@@ -12,7 +12,7 @@ public class OrdonnancementProjet {
         }
 
         //afficherContraintes(contraintes);
-        int[][] matrice = creerMatriceAdjacence(contraintes);
+        int[][] matrice = creerMatriceContraintes(contraintes);
         afficherMatrice(matrice);
 
         if (verifierGraphe(matrice)) {
@@ -58,7 +58,7 @@ public class OrdonnancementProjet {
     }
 
     // Création de la matrice d'adjacence
-    public static int[][] creerMatriceAdjacence(List<int[]> contraintes) {
+    public static int[][] creerMatriceContraintes(List<int[]> contraintes) {
         int N = contraintes.size();
         int[][] matrice = new int[N + 2][N + 2];
 
@@ -178,9 +178,9 @@ public class OrdonnancementProjet {
         Queue<Integer> file = new LinkedList<>(); // File pour le tri topologique
 
         // Calcul du degré entrant de chaque sommet
-        for (int[] ints : matrice) {
+        for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
-                if (ints[j] > -1) { // Il existe un arc de i vers j
+                if (matrice[i][j] > -1) { // Il existe un arc de i vers j
                     degreEntrant[j]++;
                 }
             }

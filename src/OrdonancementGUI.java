@@ -41,7 +41,7 @@ public class OrdonancementGUI {
 
         // Sections création
         mainPanel.add(createSectionPanel("Contraintes", contraintesArea));
-        mainPanel.add(createSectionPanel("Matrice d'adjacence", matricePanel));
+        mainPanel.add(createSectionPanel("Matrice de contraintes", matricePanel));
         mainPanel.add(createSectionPanel("Rangs des sommets", rangsArea));
 
         // Section calendriers & chemin critique
@@ -138,7 +138,7 @@ public class OrdonancementGUI {
             baos.reset();
 
             // Matrice adjacente création
-            int[][] matrice = OrdonnancementProjet.creerMatriceAdjacence(contraintes);
+            int[][] matrice = OrdonnancementProjet.creerMatriceContraintes(contraintes);
 
             // Matrice affichage
             afficherMatriceDansGrille(matrice);
