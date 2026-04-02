@@ -33,7 +33,9 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -46,8 +48,19 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class MainController {
+    private static final String CARD_STYLE = "-fx-background-color: #202636; -fx-background-radius: 14; -fx-padding: 14;"
+            + " -fx-border-color: #334155; -fx-border-radius: 14;";
+    private static final String[] ALGORITHMS = {
+            "Dijkstra", "A*", "Bellman-Ford", "Floyd-Warshall",
+            "Kruskal (MST)", "Prim (MST)", "Détection de cycles", "Flot max (Ford-Fulkerson)"
+    };
+
     private final Stage stage;
     private Graph graph;
     private GraphCanvas canvas;
@@ -61,13 +74,14 @@ public class MainController {
     private Slider stepSlider;
     private ComboBox<String> algoCombo;
     private Label metricsLabel;
+    private Label algorithmHintLabel;
+    private Label selectionSourceLabel;
+    private Label selectionTargetLabel;
+    private Label resultTitleLabel;
+    private Label resultSummaryLabel;
+    private Label resultDetailsLabel;
 
     private AlgorithmResult lastResult;
-
-    private static final String[] ALGORITHMS = {
-            "Dijkstra", "A*", "Bellman-Ford", "Floyd-Warshall",
-            "Kruskal (MST)", "Prim (MST)", "Détection de cycles", "Flot max (Ford-Fulkerson)"
-    };
 
     public MainController(Stage stage) {
         this.stage = stage;
@@ -76,36 +90,41 @@ public class MainController {
 
     public BorderPane buildUI() {
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #1A1D27;");
+        root.setStyle("-fx-background-color: #161A24;");
         root.setTop(buildMenuBar());
 
-        canvas = new GraphCanvas(760, 600);
+        canvas = new GraphCanvas(840, 660);
         canvas.setGraph(graph);
         canvas.setOnStatusChange(message -> Platform.runLater(() -> statusLabel.setText(message)));
-        canvas.setOnGraphChanged(() -> Platform.runLater(this::updateGraphInfo));
+        canvas.setOnGraphChanged(() -> Platform.runLater(this::handleGraphChanged));
+        canvas.setOnSelectionChanged(() -> Platform.runLater(this::updateSelectionInfo));
         canvas.setOnNodeRightClicked(node -> Platform.runLater(() -> onNodeRightClicked(node)));
 
         animCtrl = new AnimationController(canvas);
         animCtrl.setOnStepChange(() -> Platform.runLater(this::updateStepUI));
 
         StackPane center = new StackPane(canvas);
-        center.setStyle("-fx-background-color: #1A1D27;");
+        center.setStyle("-fx-background-color: #161A24; -fx-padding: 12;");
         root.setCenter(center);
         root.setRight(buildRightPanel());
         root.setBottom(buildStatusBar());
 
-        updateGraphInfo();
-        statusLabel.setText("Preset transport chargé — clic droit pour sélectionner source/cible");
+        handleGraphChanged();
+        updateSelectionInfo();
+        renderEmptyResult();
+        updateAlgorithmHint();
+        statusLabel.setText("Preset transport chargé — mode vue : cliquez sur une source puis une cible");
         return root;
     }
 
     private MenuBar buildMenuBar() {
         MenuBar bar = new MenuBar();
+
         Menu fileMenu = new Menu("Fichier");
-        MenuItem newGraph = new MenuItem("Nouveau");
+        MenuItem newGraph = new MenuItem("Nouveau graphe");
         MenuItem openJson = new MenuItem("Ouvrir JSON");
         MenuItem saveJson = new MenuItem("Sauvegarder JSON");
-        MenuItem importTxt = new MenuItem("Importer tableau contraintes");
+        MenuItem importTxt = new MenuItem("Importer tableau de contraintes");
         MenuItem quit = new MenuItem("Quitter");
         newGraph.setOnAction(event -> resetGraph());
         openJson.setOnAction(event -> openJson());
@@ -126,21 +145,29 @@ public class MainController {
         presetMenu.getItems().addAll(transport, demo, randomSmall, randomMedium);
 
         Menu modeMenu = new Menu("Mode");
+        MenuItem view = new MenuItem("Vue / sélection");
         MenuItem edit = new MenuItem("Édition");
         MenuItem addEdge = new MenuItem("Ajouter arc");
-        MenuItem view = new MenuItem("Vue");
+        view.setOnAction(event -> canvas.setMode(GraphCanvas.EditMode.VIEW));
         edit.setOnAction(event -> canvas.setMode(GraphCanvas.EditMode.EDIT));
         addEdge.setOnAction(event -> canvas.setMode(GraphCanvas.EditMode.ADD_EDGE));
-        view.setOnAction(event -> canvas.setMode(GraphCanvas.EditMode.VIEW));
-        modeMenu.getItems().addAll(edit, addEdge, view);
+        modeMenu.getItems().addAll(view, edit, addEdge);
 
         Menu graphMenu = new Menu("Graphe");
         CheckMenuItem directed = new CheckMenuItem("Orienté");
         CheckMenuItem weighted = new CheckMenuItem("Pondéré");
         directed.setSelected(graph.isDirected());
         weighted.setSelected(graph.isWeighted());
-        directed.setOnAction(event -> { graph.setDirected(directed.isSelected()); canvas.redraw(); updateGraphInfo(); });
-        weighted.setOnAction(event -> { graph.setWeighted(weighted.isSelected()); canvas.redraw(); updateGraphInfo(); });
+        directed.setOnAction(event -> {
+            graph.setDirected(directed.isSelected());
+            canvas.redraw();
+            handleGraphChanged();
+        });
+        weighted.setOnAction(event -> {
+            graph.setWeighted(weighted.isSelected());
+            canvas.redraw();
+            handleGraphChanged();
+        });
         graphMenu.getItems().addAll(directed, weighted);
 
         bar.getMenus().addAll(fileMenu, presetMenu, modeMenu, graphMenu);
@@ -150,122 +177,187 @@ public class MainController {
     private VBox buildRightPanel() {
         VBox panel = new VBox(12);
         panel.setPadding(new Insets(14));
-        panel.setPrefWidth(360);
-        panel.setStyle("-fx-background-color: #252836;");
+        panel.setPrefWidth(400);
+        panel.setStyle("-fx-background-color: #1D2331;");
 
         Label title = new Label("GraphRoute Studio");
-        title.setFont(Font.font("System", FontWeight.BOLD, 18));
-        title.setTextFill(Color.web("#E2E8F0"));
+        title.setFont(Font.font("System", FontWeight.BOLD, 26));
+        title.setTextFill(Color.web("#F8FAFC"));
 
-        panel.getChildren().addAll(
-                title,
-                new Separator(),
+        Label subtitle = new Label("Visualiseur JavaFX d'algorithmes de graphes orienté réseau, GPS et démonstration pédagogique.");
+        subtitle.setWrapText(true);
+        subtitle.setTextFill(Color.web("#A9B4D0"));
+
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+
+        VBox content = new VBox(12,
+                buildSelectionPanel(),
                 buildAlgorithmPanel(),
-                new Separator(),
+                buildResultPanel(),
                 buildMetricsPanel(),
-                new Separator(),
                 buildAnimationPanel(),
-                new Separator(),
-                buildLogPanel()
+                buildLogPanel(),
+                buildHelpPanel()
         );
+        content.setFillWidth(true);
+
+        scrollPane.setContent(content);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+
+        panel.getChildren().addAll(title, subtitle, scrollPane);
         return panel;
     }
 
+    private VBox buildSelectionPanel() {
+        VBox box = card();
+        Label title = sectionTitle("Sélection trajet");
+        selectionSourceLabel = infoLabel();
+        selectionTargetLabel = infoLabel();
+        updateSelectionInfo();
+
+        HBox actions = new HBox(8);
+        Button clearSelection = secondaryButton("Effacer sélection", () -> {
+            canvas.clearSelections();
+            statusLabel.setText("Sélection source/cible effacée");
+        });
+        Button swapSelection = secondaryButton("Inverser", () -> {
+            canvas.swapSelections();
+            statusLabel.setText("Source et cible inversées");
+        });
+        actions.getChildren().addAll(clearSelection, swapSelection);
+
+        Label hint = bodyLabel("Mode vue : clic gauche sur une source puis une cible. Clic droit dans le vide : réinitialiser.");
+        hint.setWrapText(true);
+        box.getChildren().addAll(title, selectionSourceLabel, selectionTargetLabel, actions, hint);
+        return box;
+    }
+
     private VBox buildAlgorithmPanel() {
-        VBox box = new VBox(8);
+        VBox box = card();
         algoCombo = new ComboBox<>();
         algoCombo.getItems().addAll(ALGORITHMS);
         algoCombo.setValue(ALGORITHMS[0]);
         algoCombo.setMaxWidth(Double.MAX_VALUE);
+        algoCombo.valueProperty().addListener((obs, oldValue, newValue) -> updateAlgorithmHint());
 
-        Label instruction = styled("Clic droit sur les nœuds pour définir source puis cible.", false);
-        instruction.setWrapText(true);
+        algorithmHintLabel = bodyLabel("");
+        algorithmHintLabel.setWrapText(true);
 
-        HBox badgeRow = new HBox(8, badge("Source", "#06D6A0"), badge("Cible", "#EF476F"));
-        badgeRow.setAlignment(Pos.CENTER_LEFT);
-
-        HBox weightRow = new HBox(8);
-        weightRow.setAlignment(Pos.CENTER_LEFT);
-        Spinner<Double> weightSpinner = new Spinner<>(0.1, 999.0, 1.0, 0.5);
+        Spinner<Double> weightSpinner = new Spinner<>();
+        weightSpinner.setValueFactory(new SpinnerValueFactory.DoubleSpinnerValueFactory(0.1, 999.0, 1.0, 0.5));
+        weightSpinner.setEditable(true);
         weightSpinner.valueProperty().addListener((obs, oldVal, newVal) -> canvas.setNewEdgeWeight(newVal));
-        weightRow.getChildren().addAll(styled("Poids nouvel arc :", false), weightSpinner);
 
-        Button runBtn = actionButton("▶ Exécuter", "#4A90D9", this::runAlgorithm);
-        Button clearBtn = actionButton("Réinitialiser vue", "#4A5568", () -> {
-            graph.clearVisualState();
-            canvas.showResult(null);
-            logArea.clear();
-            lastResult = null;
-            updateGraphInfo();
-        });
+        HBox weightRow = new HBox(8, bodyLabel("Poids nouvel arc"), weightSpinner);
+        weightRow.setAlignment(Pos.CENTER_LEFT);
 
-        box.getChildren().addAll(styled("Algorithmes", true), algoCombo, instruction, badgeRow, weightRow, runBtn, clearBtn);
+        HBox buttons = new HBox(8);
+        Button runBtn = primaryButton("▶ Exécuter", this::runAlgorithm);
+        Button clearBtn = secondaryButton("Réinitialiser vue", this::clearResultsAndVisualization);
+        HBox.setHgrow(runBtn, Priority.ALWAYS);
+        HBox.setHgrow(clearBtn, Priority.ALWAYS);
+        runBtn.setMaxWidth(Double.MAX_VALUE);
+        clearBtn.setMaxWidth(Double.MAX_VALUE);
+        buttons.getChildren().addAll(runBtn, clearBtn);
+
+        box.getChildren().addAll(sectionTitle("Algorithme"), algoCombo, algorithmHintLabel, weightRow, buttons);
+        return box;
+    }
+
+    private VBox buildResultPanel() {
+        VBox box = card();
+        resultTitleLabel = sectionTitle("Résultat");
+        resultSummaryLabel = infoLabel();
+        resultSummaryLabel.setWrapText(true);
+        resultDetailsLabel = bodyLabel("");
+        resultDetailsLabel.setWrapText(true);
+        box.getChildren().addAll(resultTitleLabel, resultSummaryLabel, resultDetailsLabel);
         return box;
     }
 
     private VBox buildMetricsPanel() {
-        VBox box = new VBox(8);
-        metricsLabel = new Label();
+        VBox box = card();
+        metricsLabel = bodyLabel("");
         metricsLabel.setWrapText(true);
-        metricsLabel.setStyle("-fx-text-fill: #A0AEC0; -fx-font-size: 12;");
-        box.getChildren().addAll(styled("Diagnostic rapide", true), metricsLabel);
+        box.getChildren().addAll(sectionTitle("Diagnostic rapide"), metricsLabel);
         return box;
     }
 
     private VBox buildAnimationPanel() {
-        VBox box = new VBox(8);
-        stepDescLabel = new Label("—");
+        VBox box = card();
+        stepDescLabel = bodyLabel("Aucune animation chargée.");
         stepDescLabel.setWrapText(true);
-        stepDescLabel.setStyle("-fx-text-fill: #FFD166; -fx-font-size: 11;");
+        stepCountLabel = captionLabel("Étape 0 / 0");
         stepSlider = new Slider(0, 0, 0);
         stepSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (stepSlider.isValueChanging()) {
                 animCtrl.goToStep(newVal.intValue());
             }
         });
-        stepCountLabel = new Label("Étape 0 / 0");
-        stepCountLabel.setStyle("-fx-text-fill: #718096; -fx-font-size: 11;");
+        stepSlider.setOnMouseReleased(event -> animCtrl.goToStep((int) Math.round(stepSlider.getValue())));
 
-        HBox controls = new HBox(6);
+        HBox controls = new HBox(8);
         controls.setAlignment(Pos.CENTER_LEFT);
-        Button stopBtn = smallButton("⏹", "#EF476F", animCtrl::stop);
-        Button backBtn = smallButton("⏮", "#4A5568", animCtrl::stepBack);
-        Button playBtn = smallButton("▶", "#6BCB77", () -> { if (animCtrl.isPlaying()) animCtrl.pause(); else animCtrl.play(); });
-        Button fwdBtn = smallButton("⏭", "#4A5568", animCtrl::stepForward);
-        animCtrl.playingProperty().addListener((obs, oldVal, newVal) -> playBtn.setText(newVal ? "⏸" : "▶"));
+        Button stopBtn = iconButton("⏹", "Arrêter", animCtrl::stop, "#EF476F");
+        Button backBtn = iconButton("⏮", "Étape précédente", animCtrl::stepBack, "#475569");
+        Button playBtn = iconButton("▶", "Lecture / pause", () -> {
+            if (animCtrl.isPlaying()) {
+                animCtrl.pause();
+            } else {
+                animCtrl.play();
+            }
+        }, "#22C55E");
+        Button fwdBtn = iconButton("⏭", "Étape suivante", animCtrl::stepForward, "#475569");
+        animCtrl.playingProperty().addListener((obs, oldVal, playing) -> playBtn.setText(playing ? "⏸" : "▶"));
 
         Slider speedSlider = new Slider(0.2, 5.0, 1.0);
         speedSlider.valueProperty().bindBidirectional(animCtrl.speedProperty());
-        controls.getChildren().addAll(stopBtn, backBtn, playBtn, fwdBtn, styled("Vitesse", false), speedSlider);
+        HBox speedBox = new HBox(8, captionLabel("Vitesse"), speedSlider);
+        speedBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(speedSlider, Priority.ALWAYS);
 
+        controls.getChildren().addAll(stopBtn, backBtn, playBtn, fwdBtn);
         animCtrl.currentStepProperty().addListener((obs, oldVal, newVal) -> updateStepUI());
         animCtrl.totalStepsProperty().addListener((obs, oldVal, newVal) -> stepSlider.setMax(Math.max(0, newVal.intValue() - 1)));
 
-        box.getChildren().addAll(styled("Animation pas-à-pas", true), stepDescLabel, stepSlider, stepCountLabel, controls);
+        box.getChildren().addAll(sectionTitle("Animation pas-à-pas"), stepDescLabel, stepCountLabel, stepSlider, controls, speedBox);
         return box;
     }
 
-    private ScrollPane buildLogPanel() {
+    private VBox buildLogPanel() {
+        VBox box = card();
         logArea = new TextArea();
         logArea.setEditable(false);
         logArea.setPrefRowCount(14);
-        logArea.setStyle("-fx-control-inner-background: #1A1D27; -fx-text-fill: #A0AEC0; -fx-font-family: 'Monospaced'; -fx-font-size: 11;");
-        ScrollPane pane = new ScrollPane(logArea);
-        pane.setFitToWidth(true);
-        pane.setFitToHeight(true);
-        VBox.setVgrow(pane, Priority.ALWAYS);
-        return pane;
+        logArea.setWrapText(true);
+        logArea.setStyle("-fx-control-inner-background: #121826; -fx-text-fill: #CBD5E1; -fx-font-family: 'Monospaced'; -fx-font-size: 11;");
+        VBox.setVgrow(logArea, Priority.ALWAYS);
+        box.getChildren().addAll(sectionTitle("Journal détaillé"), logArea);
+        return box;
+    }
+
+    private VBox buildHelpPanel() {
+        VBox box = card();
+        Label help = bodyLabel(String.join("\n",
+                "• Mode vue : sélection source/cible et lecture des résultats.",
+                "• Mode édition : clic vide pour créer, glisser pour déplacer, double-clic pour supprimer.",
+                "• Mode ajout d'arc : cliquez sur la source puis la cible.",
+                "• Les distances calculées s'affichent sous les nœuds pour les algorithmes de plus court chemin."
+        ));
+        help.setWrapText(true);
+        box.getChildren().addAll(sectionTitle("Guide express"), help);
+        return box;
     }
 
     private HBox buildStatusBar() {
         HBox bar = new HBox(16);
         bar.setPadding(new Insets(8, 14, 8, 14));
-        bar.setStyle("-fx-background-color: #0D0F19;");
+        bar.setStyle("-fx-background-color: #0D111A;");
         bar.setAlignment(Pos.CENTER_LEFT);
-        statusLabel = new Label("Prêt");
-        statusLabel.setStyle("-fx-text-fill: #A0AEC0;");
-        graphInfoLabel = new Label();
-        graphInfoLabel.setStyle("-fx-text-fill: #718096;");
+        statusLabel = captionLabel("Prêt");
+        graphInfoLabel = captionLabel("");
         bar.getChildren().addAll(statusLabel, new Separator(Orientation.VERTICAL), graphInfoLabel);
         return bar;
     }
@@ -275,6 +367,7 @@ public class MainController {
             alert("Le graphe est vide.");
             return;
         }
+
         String algo = algoCombo.getValue();
         AlgorithmResult result;
         try {
@@ -298,19 +391,23 @@ public class MainController {
         logArea.setText(result.getLog());
         if (!result.isSuccess()) {
             canvas.showResult(null);
+            animCtrl.stop();
+            renderErrorResult(result.getErrorMessage());
             alert(result.getErrorMessage());
             return;
         }
 
         canvas.showResult(result);
         animCtrl.load(result);
-        statusLabel.setText(algo + " terminé — " + result.getSteps().size() + " étapes");
-        appendSummary(result);
-        updateGraphInfo();
+        appendSummaryToLog(result);
+        renderResult(result);
+        statusLabel.setText(algo + " terminé — " + result.getSteps().size() + " étapes disponibles");
+        handleGraphChanged();
     }
 
     @FunctionalInterface
     interface BiAlgo { AlgorithmResult run(Graph graph, int src, int tgt); }
+
     @FunctionalInterface
     interface UniAlgo { AlgorithmResult run(int src); }
 
@@ -318,7 +415,7 @@ public class MainController {
         Integer src = canvas.getSelectedSourceId();
         Integer tgt = canvas.getSelectedTargetId();
         if (src == null || tgt == null) {
-            throw new IllegalArgumentException("Sélectionnez une source ET une cible avec clic droit.");
+            throw new IllegalArgumentException("Sélectionnez une source ET une cible en mode vue avant l'exécution.");
         }
         return algo.run(graph, src, tgt);
     }
@@ -331,18 +428,17 @@ public class MainController {
         return algo.run(src);
     }
 
-    private void appendSummary(AlgorithmResult result) {
+    private void appendSummaryToLog(AlgorithmResult result) {
         StringBuilder sb = new StringBuilder("\n\n─── Résumé ───\n");
         switch (result.getType()) {
             case SHORTEST_PATH -> {
-                sb.append("Chemin : ");
-                for (int i = 0; i < result.getPath().size(); i++) {
-                    if (i > 0) sb.append(" → ");
-                    sb.append(result.getPath().get(i).getLabel());
-                }
-                sb.append("\nCoût : ").append(fmt(result.getPathWeight()));
+                sb.append("Chemin : ").append(formatPath(result.getPath()));
+                sb.append("\nCoût total : ").append(fmt(result.getPathWeight()));
             }
-            case SPANNING_TREE -> sb.append("Poids MST : ").append(fmt(result.getSpanningTreeWeight()));
+            case SPANNING_TREE -> {
+                sb.append("Poids total : ").append(fmt(result.getSpanningTreeWeight()));
+                sb.append("\nArêtes retenues : ").append(result.getSpanningTreeEdges().size());
+            }
             case CYCLE_DETECTION -> sb.append("Cycle : ").append(result.hasCycle() ? "détecté" : "absent");
             case MAX_FLOW -> sb.append("Flot maximal : ").append(result.getMaxFlow());
             case ALL_PAIRS_SHORTEST -> sb.append("Matrice calculée pour ").append(graph.nodeCount()).append(" nœuds");
@@ -350,15 +446,67 @@ public class MainController {
         logArea.appendText(sb.toString());
     }
 
+    private void renderResult(AlgorithmResult result) {
+        resultTitleLabel.setText("Résultat — " + result.getAlgorithmName());
+        switch (result.getType()) {
+            case SHORTEST_PATH -> {
+                resultSummaryLabel.setText("Chemin optimal : " + formatPath(result.getPath()));
+                resultDetailsLabel.setText(String.join("\n",
+                        "Coût total : " + fmt(result.getPathWeight()),
+                        "Nœuds atteignables : " + reachableNodesCount(result.getDistances()) + " / " + graph.nodeCount(),
+                        topDistancesText(result.getDistances())
+                ));
+            }
+            case SPANNING_TREE -> {
+                resultSummaryLabel.setText("Arbre couvrant trouvé avec " + result.getSpanningTreeEdges().size() + " arêtes.");
+                resultDetailsLabel.setText(String.join("\n",
+                        "Poids total : " + fmt(result.getSpanningTreeWeight()),
+                        "Arêtes : " + result.getSpanningTreeEdges().stream()
+                                .map(edge -> edge.getSource().getLabel() + "–" + edge.getTarget().getLabel())
+                                .collect(Collectors.joining(", "))
+                ));
+            }
+            case CYCLE_DETECTION -> {
+                resultSummaryLabel.setText(result.hasCycle() ? "Cycle détecté dans le graphe." : "Aucun cycle détecté.");
+                resultDetailsLabel.setText(result.hasCycle()
+                        ? "Nœuds du cycle : " + result.getCycleNodes().stream().map(Node::getLabel).collect(Collectors.joining(" → "))
+                        : "Le graphe peut être parcouru sans revenir sur un nœud dans une boucle fermée détectée.");
+            }
+            case MAX_FLOW -> {
+                resultSummaryLabel.setText("Flot maximal : " + result.getMaxFlow());
+                resultDetailsLabel.setText("Arcs avec flot non nul : " + result.getFlowMap().entrySet().stream()
+                        .filter(entry -> entry.getValue() > 0)
+                        .map(entry -> entry.getKey().getSource().getLabel() + "→" + entry.getKey().getTarget().getLabel() + "=" + entry.getValue())
+                        .collect(Collectors.joining(", ")));
+            }
+            case ALL_PAIRS_SHORTEST -> {
+                resultSummaryLabel.setText("Toutes les distances minimales ont été calculées.");
+                resultDetailsLabel.setText(buildMatrixPreview(result));
+            }
+        }
+    }
+
+    private void renderErrorResult(String message) {
+        resultTitleLabel.setText("Résultat");
+        resultSummaryLabel.setText("Exécution interrompue.");
+        resultDetailsLabel.setText(message);
+    }
+
+    private void renderEmptyResult() {
+        resultTitleLabel.setText("Résultat");
+        resultSummaryLabel.setText("Aucun algorithme exécuté.");
+        resultDetailsLabel.setText("Sélectionnez une source et une cible si nécessaire, puis lancez un algorithme.");
+    }
+
     private void onNodeRightClicked(Node node) {
         Integer src = canvas.getSelectedSourceId();
         if (src == null || src.equals(canvas.getSelectedTargetId())) {
             canvas.setSelectedSource(node.getId());
             canvas.setSelectedTarget(null);
-            statusLabel.setText("Source : " + node.getLabel() + " — choisissez la cible");
+            statusLabel.setText("Source fixée : " + node.getLabel() + " — choisissez la cible");
         } else {
             canvas.setSelectedTarget(node.getId());
-            statusLabel.setText("Trajet sélectionné : " + graph.getNode(src).orElseThrow().getLabel() + " → " + node.getLabel());
+            statusLabel.setText("Trajet sélectionné : " + labelOf(src) + " → " + node.getLabel());
         }
     }
 
@@ -372,13 +520,17 @@ public class MainController {
         canvas.setGraph(graph);
         logArea.clear();
         animCtrl.stop();
-        updateGraphInfo();
+        renderEmptyResult();
+        updateSelectionInfo();
+        handleGraphChanged();
         statusLabel.setText(status);
     }
 
     private void openJson() {
         File file = fileChooser("JSON", "*.json").showOpenDialog(stage);
-        if (file == null) return;
+        if (file == null) {
+            return;
+        }
         try {
             applyGraph(GraphIO.loadJson(file), "Graphe chargé : " + file.getName());
         } catch (Exception ex) {
@@ -388,7 +540,9 @@ public class MainController {
 
     private void saveJson() {
         File file = fileChooser("JSON", "*.json").showSaveDialog(stage);
-        if (file == null) return;
+        if (file == null) {
+            return;
+        }
         try {
             GraphIO.saveJson(graph, file);
             statusLabel.setText("Graphe sauvegardé : " + file.getName());
@@ -399,7 +553,9 @@ public class MainController {
 
     private void importConstraints() {
         File file = fileChooser("Texte", "*.txt").showOpenDialog(stage);
-        if (file == null) return;
+        if (file == null) {
+            return;
+        }
         try {
             applyGraph(GraphIO.loadConstraintTable(file, canvas.getWidth(), canvas.getHeight()), "Tableau de contraintes importé : " + file.getName());
         } catch (Exception ex) {
@@ -407,31 +563,118 @@ public class MainController {
         }
     }
 
-    private void updateGraphInfo() {
+    private void clearResultsAndVisualization() {
+        graph.clearVisualState();
+        canvas.showResult(null);
+        animCtrl.stop();
+        logArea.clear();
+        lastResult = null;
+        renderEmptyResult();
+        handleGraphChanged();
+        statusLabel.setText("Vue réinitialisée");
+    }
+
+    private void handleGraphChanged() {
         GraphMetrics metrics = GraphAnalyzer.analyze(graph);
-        graphInfoLabel.setText(graph.getName() + " | " + metrics.nodeCount() + " nœuds | " + metrics.edgeCount() + " arcs");
-        metricsLabel.setText(String.join("\n",
-                "Orienté : " + yesNo(metrics.directed()),
-                "Pondéré : " + yesNo(metrics.weighted()),
-                "Connecté (faible) : " + yesNo(metrics.connected()),
-                "Poids négatifs : " + yesNo(metrics.hasNegativeWeight()),
-                "Densité : " + fmt(metrics.density()),
-                "Degré moyen : " + fmt(metrics.averageDegree()),
-                "Poids total : " + fmt(metrics.totalWeight()),
-                lastResult != null && lastResult.getType() == AlgorithmResult.Type.SHORTEST_PATH
-                        ? "Dernier coût chemin : " + fmt(lastResult.getPathWeight())
-                        : ""
-        ));
+        graphInfoLabel.setText(graph.getName() + " | " + metrics.nodeCount() + " nœuds | " + metrics.edgeCount() + " arcs | " + (graph.isDirected() ? "orienté" : "non orienté"));
+        List<String> lines = new ArrayList<>();
+        lines.add("Orienté : " + yesNo(metrics.directed()));
+        lines.add("Pondéré : " + yesNo(metrics.weighted()));
+        lines.add("Connecté (faible) : " + yesNo(metrics.connected()));
+        lines.add("Poids négatifs : " + yesNo(metrics.hasNegativeWeight()));
+        lines.add("Densité : " + fmt(metrics.density()));
+        lines.add("Degré moyen : " + fmt(metrics.averageDegree()));
+        lines.add("Poids total : " + fmt(metrics.totalWeight()));
+        if (lastResult != null && lastResult.getType() == AlgorithmResult.Type.SHORTEST_PATH) {
+            lines.add("Dernier coût chemin : " + fmt(lastResult.getPathWeight()));
+        }
+        metricsLabel.setText(String.join("\n", lines));
+    }
+
+    private void updateSelectionInfo() {
+        selectionSourceLabel.setText("Source : " + labelOf(canvas != null ? canvas.getSelectedSourceId() : null));
+        selectionTargetLabel.setText("Cible : " + labelOf(canvas != null ? canvas.getSelectedTargetId() : null));
+    }
+
+    private void updateAlgorithmHint() {
+        if (algorithmHintLabel == null || algoCombo == null) {
+            return;
+        }
+        String hint = switch (algoCombo.getValue()) {
+            case "Dijkstra" -> "Idéal pour les poids non négatifs. Affiche le chemin optimal, le coût et les distances par nœud.";
+            case "A*" -> "Version guidée par heuristique : pertinente pour des positions géographiques ou des cartes.";
+            case "Bellman-Ford" -> "À privilégier dès qu'il y a des poids négatifs. Plus lent, mais plus général que Dijkstra.";
+            case "Floyd-Warshall" -> "Calcule toutes les plus courtes distances entre tous les couples de nœuds.";
+            case "Kruskal (MST)" -> "Construit un arbre couvrant minimum global du graphe non orienté pondéré.";
+            case "Prim (MST)" -> "Construit un arbre couvrant minimum en partant d'une source.";
+            case "Détection de cycles" -> "Vérifie rapidement si le graphe contient une boucle.";
+            case "Flot max (Ford-Fulkerson)" -> "Utilise source et cible comme entrée/sortie pour calculer un flot maximal.";
+            default -> "";
+        };
+        algorithmHintLabel.setText(hint);
     }
 
     private void updateStepUI() {
         int current = animCtrl.getCurrentStep();
         int total = animCtrl.getTotalSteps();
         stepCountLabel.setText("Étape " + (total == 0 ? 0 : current + 1) + " / " + total);
-        stepDescLabel.setText(animCtrl.getCurrentDescription());
-        if (total > 0) {
+        String description = animCtrl.getCurrentDescription();
+        stepDescLabel.setText(description == null || description.isBlank() ? "Aucune animation chargée." : description);
+        if (!stepSlider.isValueChanging() && total > 0) {
             stepSlider.setValue(current);
         }
+        if (total == 0) {
+            stepSlider.setValue(0);
+        }
+    }
+
+    private String buildMatrixPreview(AlgorithmResult result) {
+        double[][] matrix = result.getDistMatrix();
+        List<Node> nodes = result.getNodeOrder();
+        if (matrix == null || nodes == null || nodes.isEmpty()) {
+            return "Aperçu matrice indisponible.";
+        }
+        int limit = Math.min(4, nodes.size());
+        StringBuilder sb = new StringBuilder("Aperçu matrice (premiers nœuds) :\n");
+        for (int i = 0; i < limit; i++) {
+            List<String> values = new ArrayList<>();
+            for (int j = 0; j < limit; j++) {
+                values.add(nodes.get(j).getLabel() + "=" + fmt(matrix[i][j]));
+            }
+            sb.append(nodes.get(i).getLabel()).append(" : ").append(String.join(" | ", values)).append("\n");
+        }
+        return sb.toString().trim();
+    }
+
+    private String topDistancesText(Map<Integer, Double> distances) {
+        if (distances == null || distances.isEmpty()) {
+            return "Distances : indisponibles";
+        }
+        String top = distances.entrySet().stream()
+                .filter(entry -> entry.getValue() != Double.MAX_VALUE)
+                .sorted(Map.Entry.comparingByValue())
+                .limit(5)
+                .map(entry -> labelOf(entry.getKey()) + "=" + fmt(entry.getValue()))
+                .collect(Collectors.joining(" · "));
+        return top.isBlank() ? "Distances : aucune" : "Top distances : " + top;
+    }
+
+    private int reachableNodesCount(Map<Integer, Double> distances) {
+        return (int) distances.values().stream().filter(value -> value != Double.MAX_VALUE).count();
+    }
+
+    private String formatPath(List<Node> path) {
+        if (path == null || path.isEmpty()) {
+            return "aucun chemin";
+        }
+        return path.stream().map(Node::getLabel).collect(Collectors.joining(" → "));
+    }
+
+    private String labelOf(Integer nodeId) {
+        if (nodeId == null || graph == null) {
+            return "—";
+        }
+        return graph.getNode(nodeId).map(Node::getLabel).orElse("—");
     }
 
     private Alert alertDialog(String message) {
@@ -451,35 +694,64 @@ public class MainController {
         return chooser;
     }
 
-    private Label styled(String text, boolean bold) {
+    private VBox card() {
+        VBox box = new VBox(10);
+        box.setStyle(CARD_STYLE);
+        return box;
+    }
+
+    private Label sectionTitle(String text) {
         Label label = new Label(text);
-        label.setTextFill(Color.web(bold ? "#E2E8F0" : "#A0AEC0"));
-        if (bold) label.setFont(Font.font("System", FontWeight.BOLD, 13));
+        label.setTextFill(Color.web("#F8FAFC"));
+        label.setFont(Font.font("System", FontWeight.BOLD, 15));
         return label;
     }
 
-    private Label badge(String text, String color) {
-        Label label = new Label("● " + text);
-        label.setStyle("-fx-text-fill: " + color + "; -fx-font-size: 11; -fx-font-weight: bold;");
+    private Label infoLabel() {
+        Label label = new Label();
+        label.setTextFill(Color.web("#E2E8F0"));
+        label.setFont(Font.font("System", FontWeight.SEMI_BOLD, 13));
         return label;
     }
 
-    private Button actionButton(String text, String color, Runnable action) {
+    private Label bodyLabel(String text) {
+        Label label = new Label(text);
+        label.setTextFill(Color.web("#A9B4D0"));
+        label.setFont(Font.font("System", 12));
+        return label;
+    }
+
+    private Label captionLabel(String text) {
+        Label label = new Label(text);
+        label.setTextFill(Color.web("#94A3B8"));
+        label.setFont(Font.font("System", 11));
+        return label;
+    }
+
+    private Button primaryButton(String text, Runnable action) {
         Button button = new Button(text);
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setStyle("-fx-background-color: " + color + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6;");
+        button.setStyle("-fx-background-color: linear-gradient(to right, #3B82F6, #2563EB); -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 14;");
         button.setOnAction(event -> action.run());
         return button;
     }
 
-    private Button smallButton(String text, String color, Runnable action) {
+    private Button secondaryButton(String text, Runnable action) {
         Button button = new Button(text);
-        button.setStyle("-fx-background-color: " + color + "; -fx-text-fill: white; -fx-min-width: 36; -fx-background-radius: 6;");
+        button.setStyle("-fx-background-color: #334155; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 14;");
+        button.setOnAction(event -> action.run());
+        return button;
+    }
+
+    private Button iconButton(String text, String tooltip, Runnable action, String color) {
+        Button button = new Button(text);
+        button.setTooltip(new Tooltip(tooltip));
+        button.setStyle("-fx-background-color: " + color + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-min-width: 42; -fx-min-height: 38;");
         button.setOnAction(event -> action.run());
         return button;
     }
 
     private String fmt(double value) {
+        if (value == Double.MAX_VALUE) return "∞";
         if (value == (long) value) return String.valueOf((long) value);
         return String.format("%.2f", value);
     }

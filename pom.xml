@@ -6,16 +6,17 @@
 
     <groupId>com.matalass</groupId>
     <artifactId>graphroute-studio</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
 
     <name>GraphRoute Studio</name>
-    <description>Application JavaFX de visualisation d'algorithmes de graphes orientée transport/GPS.</description>
+    <description>Application JavaFX de visualisation d'algorithmes de graphes orientée transport, GPS et pédagogie.</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
         <javafx.version>21.0.4</javafx.version>
+        <junit.version>5.10.2</junit.version>
         <main.class>com.matalass.graphroutestudio.ui.MainApp</main.class>
     </properties>
 
@@ -35,6 +36,12 @@
             <artifactId>javafx-base</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -45,6 +52,14 @@
                 <version>3.13.0</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
                 </configuration>
             </plugin>
             <plugin>

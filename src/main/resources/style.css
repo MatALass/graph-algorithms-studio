@@ -1,83 +1,144 @@
-/* GraphRoute Studio — thème sombre */
 .root {
-    -fx-base: #1A1D27;
-    -fx-background: #1A1D27;
-    -fx-control-inner-background: #252836;
-    -fx-font-family: "System";
+    -fx-base: #161A24;
+    -fx-background: #161A24;
+    -fx-control-inner-background: #202636;
+    -fx-font-family: "Inter", "Segoe UI", "System";
     -fx-font-size: 13px;
 }
 .menu-bar {
-    -fx-background-color: #252836;
-    -fx-border-color: #3D4466;
+    -fx-background-color: #1B2230;
+    -fx-border-color: #334155;
     -fx-border-width: 0 0 1 0;
-    -fx-padding: 2 8;
+    -fx-padding: 4 8;
 }
-.menu .label, .menu-item .label { -fx-text-fill: #CBD5E0; }
-.menu:hover, .menu:focused, .menu:showing { -fx-background-color: #3D4466; }
-.menu-item:focused, .menu-item:hover { -fx-background-color: #4A90D9; }
-.menu-item:focused .label, .menu-item:hover .label { -fx-text-fill: white; }
+.menu .label, .menu-item .label {
+    -fx-text-fill: #E2E8F0;
+}
+.menu:hover, .menu:focused, .menu:showing {
+    -fx-background-color: #2C3A4F;
+}
+.menu-item:focused, .menu-item:hover {
+    -fx-background-color: #3B82F6;
+}
+.menu-item:focused .label, .menu-item:hover .label {
+    -fx-text-fill: white;
+}
 .context-menu {
-    -fx-background-color: #252836;
-    -fx-border-color: #3D4466;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 12, 0, 0, 4);
+    -fx-background-color: #202636;
+    -fx-border-color: #334155;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 14, 0, 0, 5);
 }
-.scroll-pane { -fx-background-color: transparent; -fx-border-color: transparent; }
-.scroll-pane > .viewport { -fx-background-color: transparent; }
-.scroll-bar .track { -fx-background-color: #1A1D27; }
-.scroll-bar .thumb { -fx-background-color: #4A5568; -fx-background-radius: 4; }
-.scroll-bar .thumb:hover { -fx-background-color: #718096; }
-.button { -fx-cursor: hand; -fx-font-weight: bold; }
-.button:hover { -fx-opacity: 0.88; }
-.button:pressed { -fx-opacity: 0.75; }
-.combo-box {
-    -fx-background-color: #1A1D27;
-    -fx-border-color: #4A5568;
-    -fx-border-radius: 6;
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+.scroll-bar .track {
+    -fx-background-color: #111827;
+}
+.scroll-bar .thumb {
+    -fx-background-color: #475569;
     -fx-background-radius: 6;
 }
-.combo-box .cell, .combo-box-base .cell { -fx-text-fill: #E2E8F0; -fx-background-color: transparent; }
-.combo-box-popup .list-view { -fx-background-color: #252836; -fx-border-color: #4A5568; }
-.combo-box-popup .list-view .list-cell {
-    -fx-text-fill: #CBD5E0;
-    -fx-background-color: transparent;
-    -fx-padding: 6 10;
+.scroll-bar .thumb:hover {
+    -fx-background-color: #64748B;
 }
-.combo-box-popup .list-view .list-cell:filled:hover { -fx-background-color: #4A90D9; -fx-text-fill: white; }
-.combo-box .arrow-button { -fx-background-color: #3D4466; -fx-border-radius: 0 6 6 0; }
-.combo-box .arrow { -fx-background-color: #E2E8F0; }
+.separator .line {
+    -fx-border-color: #334155;
+}
+.button {
+    -fx-cursor: hand;
+}
+.button:hover {
+    -fx-opacity: 0.92;
+}
+.button:pressed {
+    -fx-opacity: 0.80;
+}
+.combo-box {
+    -fx-background-color: #121826;
+    -fx-border-color: #475569;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+}
+.combo-box .cell, .combo-box-base .cell {
+    -fx-text-fill: #E2E8F0;
+    -fx-background-color: transparent;
+}
+.combo-box-popup .list-view {
+    -fx-background-color: #202636;
+    -fx-border-color: #475569;
+}
+.combo-box-popup .list-view .list-cell {
+    -fx-text-fill: #CBD5E1;
+    -fx-background-color: transparent;
+    -fx-padding: 8 10;
+}
+.combo-box-popup .list-view .list-cell:filled:hover {
+    -fx-background-color: #3B82F6;
+    -fx-text-fill: white;
+}
+.combo-box .arrow-button {
+    -fx-background-color: #2C3A4F;
+    -fx-border-radius: 0 10 10 0;
+}
+.combo-box .arrow {
+    -fx-background-color: #E2E8F0;
+}
 .slider .track {
-    -fx-background-color: #3D4466;
-    -fx-background-radius: 3;
+    -fx-background-color: #334155;
+    -fx-background-radius: 4;
     -fx-pref-height: 4;
 }
 .slider .thumb {
-    -fx-background-color: #4A90D9;
+    -fx-background-color: #60A5FA;
     -fx-background-radius: 50%;
     -fx-pref-width: 14;
     -fx-pref-height: 14;
 }
 .spinner {
-    -fx-background-color: #1A1D27;
-    -fx-border-color: #4A5568;
-    -fx-border-radius: 6;
+    -fx-background-color: #121826;
+    -fx-border-color: #475569;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
 }
-.spinner .text-field { -fx-background-color: transparent; -fx-text-fill: #E2E8F0; }
-.spinner .increment-arrow-button, .spinner .decrement-arrow-button { -fx-background-color: #3D4466; }
-.spinner .increment-arrow, .spinner .decrement-arrow { -fx-background-color: #CBD5E0; }
-.text-area {
-    -fx-background-color: #1A1D27;
-    -fx-text-fill: #A0AEC0;
-    -fx-border-color: transparent;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
-}
-.text-area .content { -fx-background-color: #1A1D27; }
-.separator .line { -fx-border-color: #3D4466; }
-.alert { -fx-background-color: #252836; }
-.alert .header-panel { -fx-background-color: #1A1D27; }
-.alert .content.label { -fx-text-fill: #E2E8F0; }
-.tooltip {
-    -fx-background-color: #3D4466;
+.spinner .text-field {
+    -fx-background-color: transparent;
     -fx-text-fill: #E2E8F0;
-    -fx-font-size: 12;
+}
+.spinner .increment-arrow-button,
+.spinner .decrement-arrow-button {
+    -fx-background-color: #2C3A4F;
+}
+.spinner .increment-arrow,
+.spinner .decrement-arrow {
+    -fx-background-color: #CBD5E1;
+}
+.text-area {
+    -fx-background-color: #121826;
+    -fx-text-fill: #CBD5E1;
+    -fx-border-color: #334155;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+}
+.text-area .content {
+    -fx-background-color: #121826;
+}
+.alert {
+    -fx-background-color: #202636;
+}
+.alert .header-panel {
+    -fx-background-color: #161A24;
+}
+.alert .content.label {
+    -fx-text-fill: #F8FAFC;
+}
+.tooltip {
+    -fx-background-color: #334155;
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 12px;
 }
