@@ -163,18 +163,9 @@ I did not generate a real demo GIF here because that requires running the UI and
 - Extensible project structure
 - Portfolio-ready engineering standards
 
-## Suggested GitHub Metadata
-
-### Description
-Interactive JavaFX application to visualize and simulate graph algorithms (Dijkstra, A*, Bellman-Ford, MST, max flow) on transport networks with step-by-step execution.
-
-### Topics
-`java`, `javafx`, `graph-algorithms`, `algorithm-visualization`, `dijkstra`, `a-star`, `bellman-ford`, `floyd-warshall`, `kruskal`, `prim`, `max-flow`, `graph-visualization`, `network-analysis`, `shortest-path`, `transport-network`
-
 ## Author
 
 Mathieu Alassoeur  
-GitHub: https://github.com/MatALass
 
 ## License
 
