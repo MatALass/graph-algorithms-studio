@@ -1,101 +1,180 @@
 # Graph Algorithms Studio
 
-[![CI](https://github.com/MatALass/graph-algorithms-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/MatALass/graph-algorithms-studio/actions)
+[![CI](https://github.com/MatALass/graph-algorithms-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/MatALass/graph-algorithms-studio/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/MatALass/graph-algorithms-studio)](https://github.com/MatALass/graph-algorithms-studio/releases)
 ![Java](https://img.shields.io/badge/Java-21-blue)
-![JavaFX](https://img.shields.io/badge/JavaFX-UI-green)
-![Maven](https://img.shields.io/badge/Maven-Build-red)
+![JavaFX](https://img.shields.io/badge/JavaFX-21-green)
+![Maven](https://img.shields.io/badge/Maven-3.9+-red)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 Interactive JavaFX application for visualizing and simulating graph algorithms on transport networks.
 
 ## Overview
 
-Graph Algorithms Studio is a desktop application built with JavaFX that enables interactive creation, manipulation, and analysis of graphs. It is designed for algorithm visualization, education, and transport network simulation.
+Graph Algorithms Studio is a desktop JavaFX application designed to create, edit, visualize, and analyze weighted graphs in an interactive way. The project targets graph theory learning, algorithm visualization, and transport network simulation, with a focus on clarity, reproducibility, and maintainable architecture.
 
-The application provides a structured and visual approach to understanding graph algorithms through real-time interaction and step-by-step execution.
+The application combines:
+- an interactive graph editor,
+- classic graph algorithms,
+- visual step-by-step execution,
+- and a clean separation between UI, engine, and algorithm layers.
 
-## Features
+## Core Features
 
-### Graph Manipulation
-- Add and remove nodes and edges
-- Weighted graphs support
-- Drag and drop nodes
-- Directed and undirected graphs
+### Interactive graph editing
+- Add, move, and remove nodes
+- Add and remove weighted edges
+- Support for directed and undirected graphs
+- Preset graph loading for quick demos
 
 ### Algorithms
-- Dijkstra (shortest path)
-- A* (heuristic search)
-- Bellman-Ford (negative weights)
-- Floyd-Warshall (all-pairs shortest paths)
-- Kruskal and Prim (minimum spanning tree)
-- Cycle detection (DFS / Union-Find)
-- Ford-Fulkerson (maximum flow)
+- Dijkstra
+- A*
+- Bellman-Ford
+- Floyd-Warshall
+- Kruskal
+- Prim
+- Cycle detection
+- Ford-Fulkerson
 
 ### Visualization
-- Highlighted shortest paths
-- Node distance display
-- Step-by-step execution
-- Playback controls for algorithm animation
+- Result path highlighting
+- Distance display on nodes
+- Step-by-step execution controls
+- Visual feedback during traversal and updates
 
 ### Analysis
 - Graph density
-- Connectivity detection
+- Connectivity checks
 - Degree metrics
-- Weight distribution insights
+- Weight-related indicators
 
-## Installation
+## Technology Stack
 
-### Prerequisites
-- Java 21+
-- Maven 3.9+
-
-### Run locally
-
-git clone https://github.com/MatALass/graph-algorithms-studio
-cd graph-algorithms-studio
-mvn clean javafx:run
-
-## Tests
-
-mvn test
+- Java 21
+- JavaFX
+- Maven
+- JUnit 5
+- GitHub Actions
 
 ## Project Structure
 
+```text
 src/main/java/com/matalass/graphroutestudio
-├── algorithms   # Algorithm implementations
-├── engine       # Core graph model
-├── ui           # JavaFX UI layer
-├── animation    # Step-by-step visualization
-├── analysis     # Graph metrics
-├── io           # Import / export
-├── presets      # Sample graphs
+├── algorithms
+├── analysis
+├── animation
+├── engine
+├── io
+├── presets
+└── ui
+```
+
+## Local Setup
+
+### Prerequisites
+
+- Java 21 or higher
+- Maven 3.9 or higher
+
+### Run locally
+
+```bash
+git clone https://github.com/MatALass/graph-algorithms-studio
+cd graph-algorithms-studio
+mvn clean javafx:run
+```
+
+### Run tests
+
+```bash
+mvn test
+```
+
+### Build the project
+
+```bash
+mvn clean package
+```
+
+## Continuous Integration
+
+This repository is configured with GitHub Actions.
+
+### CI workflow
+The CI workflow:
+- checks out the repository,
+- installs Java 21,
+- caches Maven dependencies,
+- runs `mvn clean verify`,
+- uploads test reports and generated JAR artifacts.
+
+Workflow file:
+```text
+.github/workflows/ci.yml
+```
+
+### Release workflow
+The release workflow runs when a Git tag starting with `v` is pushed, for example:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+It:
+- builds the project,
+- collects generated JAR files,
+- creates a GitHub Release,
+- attaches the build artifacts.
+
+Workflow file:
+```text
+.github/workflows/release.yml
+```
+
+## Release and Distribution Notes
+
+For a JavaFX desktop project, a plain JAR is useful as a build artifact, but it is not always the best end-user distribution format. If you want a stronger desktop delivery later, the next recommended step is to package a runtime image or native installer with `jlink` or `jpackage`.
+
+## Demo
+
+A GIF or short video demo is strongly recommended for the repository front page.
+
+Recommended capture sequence:
+1. Load a transport preset
+2. Select source and target nodes
+3. Run Dijkstra
+4. Show highlighted path and total distance
+5. Start step-by-step animation
+6. Switch to another algorithm such as A* or Kruskal
+
+Suggested output:
+- `docs/demo.gif`
+- first screenshot in `assets/screenshots/`
+
+I did not generate a real demo GIF here because that requires running the UI and capturing the application visually on your machine.
 
 ## Design Principles
 
-- Separation of concerns between UI, algorithms, and core engine
-- Deterministic algorithm implementations
-- Extensible architecture for adding new algorithms
-- Clear data flow for visualization and animation
+- Separation of concerns
+- Testable algorithm layer
+- UI isolated from core graph logic
+- Extensible project structure
+- Portfolio-ready engineering standards
 
-## Use Cases
+## Suggested GitHub Metadata
 
-- Graph theory learning and teaching
-- Algorithm visualization
-- Transport network simulation
-- Decision-support exploration
+### Description
+Interactive JavaFX application to visualize and simulate graph algorithms (Dijkstra, A*, Bellman-Ford, MST, max flow) on transport networks with step-by-step execution.
 
-## Future Improvements
-
-- Real-world map integration
-- CSV / API data import
-- Performance benchmarking
-- Multi-algorithm comparison
-- Export visualizations
+### Topics
+`java`, `javafx`, `graph-algorithms`, `algorithm-visualization`, `dijkstra`, `a-star`, `bellman-ford`, `floyd-warshall`, `kruskal`, `prim`, `max-flow`, `graph-visualization`, `network-analysis`, `shortest-path`, `transport-network`
 
 ## Author
 
 Mathieu Alassoeur  
-https://github.com/MatALass
+GitHub: https://github.com/MatALass
 
 ## License
 

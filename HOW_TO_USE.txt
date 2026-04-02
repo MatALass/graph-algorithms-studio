@@ -1,0 +1,14 @@
+Files included in this package
+
+1. .github/workflows/ci.yml
+   Standard CI pipeline for build and tests.
+
+2. .github/workflows/release.yml
+   Tag-based GitHub release pipeline.
+
+3. README.md
+   Updated repository README with badges, setup, CI, release guidance, and demo guidance.
+
+What I did not include
+- A real demo GIF: this must be captured on your local machine while the JavaFX app is running.
+- A guaranteed self-contained JavaFX installer: that depends on the exact Maven plugins and packaging strategy you want to adopt next.
