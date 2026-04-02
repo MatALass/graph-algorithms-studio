@@ -1,60 +1,102 @@
-# GraphRoute Studio
+# Graph Algorithms Studio
 
-GraphRoute Studio est une application JavaFX de visualisation interactive des algorithmes de graphes, pensée pour un cas d'usage concret : **réseaux de transport / GPS**.
+[![CI](https://github.com/MatALass/graph-algorithms-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/MatALass/graph-algorithms-studio/actions)
+![Java](https://img.shields.io/badge/Java-21-blue)
+![JavaFX](https://img.shields.io/badge/JavaFX-UI-green)
+![Maven](https://img.shields.io/badge/Maven-Build-red)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
-## Ce que le projet propose
-- interface JavaFX moderne en thème sombre
-- sélection visuelle source / cible directement sur le graphe
-- création, déplacement et suppression de nœuds
-- ajout d'arcs pondérés en mode dédié
-- surbrillance visuelle du chemin optimal, des arbres couvrants et des cycles
-- distances affichées directement sous les nœuds pour les algorithmes de plus court chemin
-- animation pas-à-pas avec lecture, pause, navigation et contrôle de vitesse
-- import / export JSON
-- import de tableaux de contraintes `.txt`
-- presets : réseau de transport, réseau de démonstration, graphes aléatoires
+Interactive JavaFX application for visualizing and simulating graph algorithms on transport networks.
 
-## Algorithmes inclus
-- Dijkstra
-- A*
-- Bellman-Ford
-- Floyd-Warshall
-- Kruskal
-- Prim
-- Détection de cycles
-- Ford-Fulkerson
+## Overview
 
-## Lancement
-Prérequis :
-- **Java 21+**
-- **Maven 3.9+**
+Graph Algorithms Studio is a desktop application built with JavaFX that enables interactive creation, manipulation, and analysis of graphs. It is designed for algorithm visualization, education, and transport network simulation.
 
-```powershell
+The application provides a structured and visual approach to understanding graph algorithms through real-time interaction and step-by-step execution.
+
+## Features
+
+### Graph Manipulation
+- Add and remove nodes and edges
+- Weighted graphs support
+- Drag and drop nodes
+- Directed and undirected graphs
+
+### Algorithms
+- Dijkstra (shortest path)
+- A* (heuristic search)
+- Bellman-Ford (negative weights)
+- Floyd-Warshall (all-pairs shortest paths)
+- Kruskal and Prim (minimum spanning tree)
+- Cycle detection (DFS / Union-Find)
+- Ford-Fulkerson (maximum flow)
+
+### Visualization
+- Highlighted shortest paths
+- Node distance display
+- Step-by-step execution
+- Playback controls for algorithm animation
+
+### Analysis
+- Graph density
+- Connectivity detection
+- Degree metrics
+- Weight distribution insights
+
+## Installation
+
+### Prerequisites
+- Java 21+
+- Maven 3.9+
+
+### Run locally
+
+git clone https://github.com/MatALass/graph-algorithms-studio
+cd graph-algorithms-studio
 mvn clean javafx:run
-```
 
 ## Tests
-```powershell
+
 mvn test
-```
 
-## Structure
-- `src/main/java/com/matalass/graphroutestudio/engine` : modèle graphe (`Graph`, `Node`, `Edge`)
-- `algorithms` : implémentations des algorithmes
-- `analysis` : métriques et diagnostic du graphe
-- `animation` : lecture pas-à-pas des étapes algorithmiques
-- `io` : import / export et génération aléatoire
-- `presets` : jeux de données de démonstration
-- `ui` : interface JavaFX
-- `src/test/java` : tests unitaires de base
+## Project Structure
 
-## Conseils d'utilisation
-- **Mode vue** : cliquez sur une source puis une cible, puis exécutez un algorithme.
-- **Mode édition** : cliquez dans le vide pour créer un nœud, glissez pour déplacer, double-cliquez pour supprimer.
-- **Mode ajout d'arc** : choisissez la source puis la cible, avec le poids défini dans le panneau latéral.
+src/main/java/com/matalass/graphroutestudio
+├── algorithms   # Algorithm implementations
+├── engine       # Core graph model
+├── ui           # JavaFX UI layer
+├── animation    # Step-by-step visualization
+├── analysis     # Graph metrics
+├── io           # Import / export
+├── presets      # Sample graphs
 
-## Nom recommandé du repo
-`graphroute-studio`
+## Design Principles
 
-## Topics GitHub recommandés
-`java` `javafx` `maven` `graph-theory` `algorithms` `shortest-path` `dijkstra` `a-star` `bellman-ford` `floyd-warshall` `minimum-spanning-tree` `ford-fulkerson` `visualization`
+- Separation of concerns between UI, algorithms, and core engine
+- Deterministic algorithm implementations
+- Extensible architecture for adding new algorithms
+- Clear data flow for visualization and animation
+
+## Use Cases
+
+- Graph theory learning and teaching
+- Algorithm visualization
+- Transport network simulation
+- Decision-support exploration
+
+## Future Improvements
+
+- Real-world map integration
+- CSV / API data import
+- Performance benchmarking
+- Multi-algorithm comparison
+- Export visualizations
+
+## Author
+
+Mathieu Alassoeur  
+https://github.com/MatALass
+
+## License
+
+MIT License
